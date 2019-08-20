@@ -7,11 +7,11 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -35,7 +35,7 @@ import java.util.*;
 
 public class PrimoTreeDecay extends JavaPlugin implements Listener
 {
-    LinkedList<List<BlockState>> decayQueue = new LinkedList<>();
+    private LinkedList<List<BlockState>> decayQueue = new LinkedList<>();
 
     @Override
     public void onEnable()
@@ -48,9 +48,9 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
         }
     }
 
-    List<Material> logs = Arrays.asList( Material.LOG, Material.LOG_2 );
-    List<Material> leaves = Arrays.asList( Material.LEAVES, Material.LEAVES_2 );
-    final BlockFace[] directions = new BlockFace[]{ BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.DOWN, BlockFace.UP };
+    private List<Material> logs = Arrays.asList( Material.OAK_LOG, Material.DARK_OAK_LOG, Material.BIRCH_LOG, Material.ACACIA_LOG, Material.JUNGLE_LOG, Material.SPRUCE_LOG, Material.STRIPPED_OAK_LOG, Material.STRIPPED_DARK_OAK_LOG, Material.STRIPPED_BIRCH_LOG, Material.STRIPPED_ACACIA_LOG, Material.STRIPPED_JUNGLE_LOG, Material.STRIPPED_SPRUCE_LOG );
+    private List<Material> leaves = Arrays.asList( Material.OAK_LEAVES, Material.DARK_OAK_LEAVES, Material.BIRCH_LEAVES, Material.ACACIA_LEAVES, Material.JUNGLE_LEAVES, Material.SPRUCE_LEAVES );
+    private final BlockFace[] directions = new BlockFace[]{ BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.DOWN, BlockFace.UP };
 
     @EventHandler( priority = EventPriority.MONITOR, ignoreCancelled = true )
     public void onBlockBreak( BlockBreakEvent event )
@@ -77,14 +77,15 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
                         {
                             if ( !isConnectedToLog( block, 0 ) )
                             {
-
-                                MaterialData data = block.getState().getData();
-                                byte id = data.getData();
-                                if ( ( id & 4 ) == 4 )
+                                if ( block.getState().getBlockData() instanceof Leaves )
                                 {
-                                    continue;
+                                    Leaves data = (Leaves) block.getState().getBlockData();
+                                    if ( data.isPersistent() )
+                                    {
+                                        continue;
+                                    }
+                                    decay.add( block.getState() );
                                 }
-                                decay.add( block.getState() );
                             }
                         }
                     }
