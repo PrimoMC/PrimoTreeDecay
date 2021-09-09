@@ -5,7 +5,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.event.EventHandler;
@@ -15,7 +14,10 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Copyright ${year} Luuk Jacobs
@@ -48,14 +50,10 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
         }
     }
 
-    private List<Material> logs = Arrays.asList( Material.OAK_LOG, Material.DARK_OAK_LOG, Material.BIRCH_LOG, Material.ACACIA_LOG, Material.JUNGLE_LOG, Material.SPRUCE_LOG, Material.STRIPPED_OAK_LOG, Material.STRIPPED_DARK_OAK_LOG, Material.STRIPPED_BIRCH_LOG, Material.STRIPPED_ACACIA_LOG, Material.STRIPPED_JUNGLE_LOG, Material.STRIPPED_SPRUCE_LOG );
-    private List<Material> leaves = Arrays.asList( Material.OAK_LEAVES, Material.DARK_OAK_LEAVES, Material.BIRCH_LEAVES, Material.ACACIA_LEAVES, Material.JUNGLE_LEAVES, Material.SPRUCE_LEAVES );
-    private final BlockFace[] directions = new BlockFace[]{ BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.DOWN, BlockFace.UP };
-
     @EventHandler( priority = EventPriority.MONITOR, ignoreCancelled = true )
     public void onBlockBreak( BlockBreakEvent event )
     {
-        if ( logs.contains( event.getBlock().getType() ) )
+        if ( isLog( event.getBlock() ) )
         {
             if ( !event.getPlayer().getGameMode().equals( GameMode.CREATIVE ) )
             {
@@ -73,20 +71,19 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
                     for ( int z = -5; z <= 5; z++ )
                     {
                         Block block = event.getBlock().getLocation().clone().add( x, y, z ).getBlock();
-                        if ( leaves.contains( block.getType() ) )
+                        if ( isLeaves( block ) )
                         {
-                            if ( !isConnectedToLog( block, 0 ) )
+                            Leaves data = (Leaves) block.getState().getBlockData();
+                            if ( data.isPersistent() )
                             {
-                                if ( block.getState().getBlockData() instanceof Leaves )
-                                {
-                                    Leaves data = (Leaves) block.getState().getBlockData();
-                                    if ( data.isPersistent() )
-                                    {
-                                        continue;
-                                    }
-                                    decay.add( block.getState() );
-                                }
+                                continue;
                             }
+                            if ( data.getDistance() <= 6 )
+                            {
+                                continue;
+                            }
+                            decay.add( block.getState() );
+
                         }
                     }
                 }
@@ -108,28 +105,14 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
         }
     }
 
-    private boolean isConnectedToLog( Block block, int i )
+    private boolean isLeaves( Block block )
     {
-        if ( i >= 4 )
-        {
-            return false;
-        }
-        for ( BlockFace face : directions )
-        {
-            Block relative = block.getRelative( face );
-            if ( logs.contains( relative.getType() ) )
-            {
-                return true;
-            }
-            if ( leaves.contains( relative.getType() ) )
-            {
-                if ( isConnectedToLog( relative, i + 1 ) )
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return block.getState().getBlockData() instanceof Leaves;
+    }
+
+    private boolean isLog( Block block )
+    {
+        return block.getType().toString().contains( "_LOG" );
     }
 
     private class DecayTask extends BukkitRunnable
@@ -155,7 +138,7 @@ public class PrimoTreeDecay extends JavaPlugin implements Listener
                 for ( BlockState state : states )
                 {
                     Block block = state.getBlock();
-                    if ( leaves.contains( block.getType() ) )
+                    if ( isLeaves( block ) )
                     {
                         block.breakNaturally();
                     }
